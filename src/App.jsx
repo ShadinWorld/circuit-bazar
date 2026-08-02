@@ -7,6 +7,7 @@ import ProductDetails from "./pages/ProductDetails"
 import Search from "./pages/Search"
 import Offers from "./pages/Offers"
 import Cart from "./pages/Cart"
+import Checkout from "./pages/Checkout"
 import Contact from "./pages/Contact"
 import About from "./pages/About"
 import Privacy from "./pages/Privacy"
@@ -25,6 +26,7 @@ function App() {
         <Route path="/search" element={<Search />} />
         <Route path="/offers" element={<Offers />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/checkout" element={<Checkout />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />

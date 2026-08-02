@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom"
 import { MessageCircle, Mail, MapPin } from "lucide-react"
 
+// TODO: same number as Checkout.jsx and Contact.jsx — keep in sync
+const WHATSAPP_NUMBER = "8801636050980"
+
 function Footer() {
   return (
     <footer className="bg-primary-text text-white mt-24">
@@ -37,7 +40,7 @@ function Footer() {
           <ul className="space-y-3 text-sm text-slate-300">
             <li className="flex items-center gap-2">
               <MessageCircle size={16} className="text-accent" />
-              <a href="https://wa.me/8800000000000" target="_blank" rel="noreferrer" className="hover:text-accent">
+              <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" className="hover:text-accent">
                 WhatsApp us
               </a>
             </li>
