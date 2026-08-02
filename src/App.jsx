@@ -13,11 +13,21 @@ import About from "./pages/About"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
 import NotFound from "./pages/NotFound"
-import AdminSeed from "./pages/AdminSeed"
+
+import Login from "./admin/pages/Login"
+import AdminLayout from "./admin/components/AdminLayout"
+import RequireAuth from "./admin/components/RequireAuth"
+import Dashboard from "./admin/pages/Dashboard"
+import AdminProducts from "./admin/pages/AdminProducts"
+import AdminOrders from "./admin/pages/AdminOrders"
+import AdminCustomers from "./admin/pages/AdminCustomers"
+import AdminInventory from "./admin/pages/AdminInventory"
+import Settings from "./admin/pages/Settings"
 
 function App() {
   return (
     <Routes>
+      {/* Customer-facing site */}
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
         <Route path="/products" element={<Products />} />
@@ -31,8 +41,25 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/admin-seed" element={<AdminSeed />} />
         <Route path="*" element={<NotFound />} />
+      </Route>
+
+      {/* Admin */}
+      <Route path="/admin/login" element={<Login />} />
+      <Route
+        path="/admin"
+        element={
+          <RequireAuth>
+            <AdminLayout />
+          </RequireAuth>
+        }
+      >
+        <Route index element={<Dashboard />} />
+        <Route path="products" element={<AdminProducts />} />
+        <Route path="orders" element={<AdminOrders />} />
+        <Route path="customers" element={<AdminCustomers />} />
+        <Route path="inventory" element={<AdminInventory />} />
+        <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>
   )
