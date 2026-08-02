@@ -1,13 +1,20 @@
-import { useEffect, useState } from "react"
-import { DollarSign, ShoppingBag, Package, AlertTriangle } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
+import { DollarSign, ShoppingBag, Package, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
+import {
+  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts"
 import { getAllOrders } from "../../firebase/orders"
 import { getAllProducts } from "../../firebase/products"
 
-function StatCard({ icon: Icon, label, value }) {
+function StatCard({ icon: Icon, label, value, tone = "accent" }) {
+  const toneClasses = {
+    accent: "bg-emerald-50 text-accent",
+    red: "bg-red-50 text-red-500",
+  }
   return (
     <div className="bg-white rounded-xl border border-slate-100 p-5 flex items-center gap-4">
-      <span className="w-11 h-11 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-        <Icon size={20} className="text-accent" />
+      <span className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${toneClasses[tone]}`}>
+        <Icon size={20} />
       </span>
       <div>
         <p className="text-xs text-slate-400">{label}</p>
@@ -15,6 +22,11 @@ function StatCard({ icon: Icon, label, value }) {
       </div>
     </div>
   )
+}
+
+function formatDay(timestamp) {
+  if (!timestamp?.toDate) return "—"
+  return timestamp.toDate().toLocaleDateString("en-GB", { day: "2-digit", month: "short" })
 }
 
 function Dashboard() {
@@ -31,7 +43,24 @@ function Dashboard() {
       .finally(() => setLoading(false))
   }, [])
 
+  const productMap = useMemo(() => {
+    const map = {}
+    products.forEach((p) => { map[p.id] = p })
+    return map
+  }, [products])
+
   const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+
+  const totalCost = orders.reduce((sum, o) => {
+    const orderCost = (o.items || []).reduce((s, item) => {
+      const product = productMap[item.productId]
+      const buyPrice = product?.buyPrice || 0
+      return s + buyPrice * item.quantity
+    }, 0)
+    return sum + orderCost
+  }, 0)
+
+  const totalProfit = totalRevenue - totalCost
   const lowStock = products.filter((p) => p.stock <= 5)
 
   const productSales = {}
@@ -43,6 +72,17 @@ function Dashboard() {
   const topProducts = Object.entries(productSales)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5)
+    .map(([name, qty]) => ({ name: name.length > 14 ? name.slice(0, 14) + "…" : name, qty }))
+
+  // Revenue grouped by day, last 14 days of order activity
+  const revenueByDay = {}
+  orders.forEach((order) => {
+    const day = formatDay(order.orderDate)
+    revenueByDay[day] = (revenueByDay[day] || 0) + (order.total || 0)
+  })
+  const revenueChartData = Object.entries(revenueByDay)
+    .map(([day, revenue]) => ({ day, revenue }))
+    .slice(-14)
 
   return (
     <div className="p-6 sm:p-8">
@@ -52,45 +92,68 @@ function Dashboard() {
 
       {!loading && (
         <>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <StatCard icon={DollarSign} label="Total Revenue" value={`৳${totalRevenue}`} />
             <StatCard icon={ShoppingBag} label="Total Orders" value={orders.length} />
             <StatCard icon={Package} label="Total Products" value={products.length} />
-            <StatCard icon={AlertTriangle} label="Low Stock" value={lowStock.length} />
+            <StatCard icon={AlertTriangle} label="Low Stock" value={lowStock.length} tone={lowStock.length > 0 ? "red" : "accent"} />
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <StatCard icon={TrendingUp} label="Total Profit" value={`৳${totalProfit}`} />
+            <StatCard icon={TrendingDown} label="Total Cost (COGS)" value={`৳${totalCost}`} tone="red" />
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white rounded-xl border border-slate-100 p-6">
+              <h2 className="font-semibold text-primary-text mb-4">Revenue Over Time</h2>
+              {revenueChartData.length === 0 ? (
+                <p className="text-sm text-slate-400">No sales yet.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <LineChart data={revenueChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(v) => [`৳${v}`, "Revenue"]} />
+                    <Line type="monotone" dataKey="revenue" stroke="#2fa47e" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
             <div className="bg-white rounded-xl border border-slate-100 p-6">
               <h2 className="font-semibold text-primary-text mb-4">Top Selling Products</h2>
               {topProducts.length === 0 ? (
                 <p className="text-sm text-slate-400">No sales yet.</p>
               ) : (
-                <ul className="flex flex-col gap-3">
-                  {topProducts.map(([name, qty]) => (
-                    <li key={name} className="flex justify-between text-sm">
-                      <span className="text-slate-600">{name}</span>
-                      <span className="font-semibold text-primary-text">{qty} sold</span>
-                    </li>
-                  ))}
-                </ul>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={topProducts}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="qty" fill="#2fa47e" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               )}
             </div>
+          </div>
 
-            <div className="bg-white rounded-xl border border-slate-100 p-6">
-              <h2 className="font-semibold text-primary-text mb-4">Low Stock Alerts</h2>
-              {lowStock.length === 0 ? (
-                <p className="text-sm text-slate-400">Everything is well stocked.</p>
-              ) : (
-                <ul className="flex flex-col gap-3">
-                  {lowStock.map((p) => (
-                    <li key={p.id} className="flex justify-between text-sm">
-                      <span className="text-slate-600">{p.name}</span>
-                      <span className="font-semibold text-red-500">{p.stock} left</span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+          <div className="bg-white rounded-xl border border-slate-100 p-6">
+            <h2 className="font-semibold text-primary-text mb-4">Low Stock Alerts</h2>
+            {lowStock.length === 0 ? (
+              <p className="text-sm text-slate-400">Everything is well stocked.</p>
+            ) : (
+              <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+                {lowStock.map((p) => (
+                  <li key={p.id} className="flex justify-between text-sm">
+                    <span className="text-slate-600">{p.name}</span>
+                    <span className="font-semibold text-red-500">{p.stock} left</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </>
       )}

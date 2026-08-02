@@ -1,15 +1,11 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { useCart } from "../context/CartContext"
 import { createOrder } from "../firebase/orders"
+import { getAllDeliveryAreas } from "../firebase/deliveryAreas"
 import Button from "../components/ui/Button"
 
 const WHATSAPP_NUMBER = "8801636050980"
-
-const deliveryAreas = [
-  { value: "ewu", label: "EWU Campus (Free Delivery)" },
-  { value: "other", label: "Other area (delivery charge may apply)" },
-]
 
 function buildWhatsAppMessage(order) {
   const lines = [
@@ -17,7 +13,7 @@ function buildWhatsAppMessage(order) {
     ``,
     `Name: ${order.customerName}`,
     `Phone: ${order.phone}`,
-    `Delivery area: ${order.deliveryArea === "ewu" ? "EWU Campus (Free Delivery)" : "Other area"}`,
+    `Delivery area: ${order.deliveryAreaName}`,
     `Address: ${order.address}`,
     ``,
     `*Items:*`,
@@ -32,10 +28,12 @@ function buildWhatsAppMessage(order) {
 function Checkout() {
   const { items, totalPrice, clearCart } = useCart()
   const navigate = useNavigate()
+  const [areas, setAreas] = useState([])
+  const [areasLoading, setAreasLoading] = useState(true)
   const [form, setForm] = useState({
     customerName: "",
     phone: "",
-    deliveryArea: "ewu",
+    deliveryAreaId: "",
     address: "",
     notes: "",
   })
@@ -43,7 +41,19 @@ function Checkout() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
-  const isEwu = form.deliveryArea === "ewu"
+  useEffect(() => {
+    getAllDeliveryAreas()
+      .then((list) => {
+        setAreas(list)
+        if (list.length > 0) {
+          setForm((prev) => ({ ...prev, deliveryAreaId: list[0].id }))
+        }
+      })
+      .finally(() => setAreasLoading(false))
+  }, [])
+
+  const selectedArea = areas.find((a) => a.id === form.deliveryAreaId)
+  const isFreeArea = selectedArea?.freeDelivery
 
   function handleChange(e) {
     const { name, value } = e.target
@@ -80,8 +90,9 @@ function Checkout() {
     const order = {
       customerName: form.customerName,
       phone: form.phone,
-      deliveryArea: form.deliveryArea,
-      address: isEwu ? "EWU Campus" : form.address,
+      deliveryAreaId: form.deliveryAreaId,
+      deliveryAreaName: selectedArea?.name || "Not specified",
+      address: isFreeArea ? (selectedArea?.name || "Not specified") : form.address,
       notes: form.notes,
       items: items.map((item) => ({
         productId: item.productId,
@@ -163,21 +174,27 @@ function Checkout() {
           {phoneError && <p className="text-xs text-red-600 mt-1">{phoneError}</p>}
         </div>
 
-        <select
-          name="deliveryArea"
-          value={form.deliveryArea}
-          onChange={handleChange}
-          className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white"
-        >
-          {deliveryAreas.map((area) => (
-            <option key={area.value} value={area.value}>{area.label}</option>
-          ))}
-        </select>
+        {areasLoading && <p className="text-xs text-slate-400">Loading delivery areas…</p>}
 
-        {isEwu ? (
+        {!areasLoading && areas.length > 0 && (
+          <select
+            name="deliveryAreaId"
+            value={form.deliveryAreaId}
+            onChange={handleChange}
+            className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white"
+          >
+            {areas.map((area) => (
+              <option key={area.id} value={area.id}>
+                {area.name} {area.freeDelivery ? "(Free Delivery)" : ""}
+              </option>
+            ))}
+          </select>
+        )}
+
+        {isFreeArea ? (
           <p className="text-xs text-accent bg-emerald-50 rounded-lg px-4 py-3">
-            No address needed — we'll coordinate campus delivery details with
-            you directly on WhatsApp.
+            No address needed — we'll coordinate delivery details with you
+            directly on WhatsApp.
           </p>
         ) : (
           <textarea

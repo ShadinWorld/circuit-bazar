@@ -20,7 +20,9 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="Circuit Bazar" className="w-8 h-8 rounded-lg object-cover" />
+            <div className="bg-white rounded-lg p-0.5">
+              <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="Circuit Bazar" className="w-7 h-7 rounded object-cover" />
+            </div>
             <h3 className="text-lg font-bold">Circuit Bazar</h3>
           </div>
           <p className="text-sm text-slate-300 leading-relaxed">
