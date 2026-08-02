@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Package, ShoppingBag, Users, Boxes, LogOut, Cpu } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingBag, Users, Boxes, LogOut } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 
 const navItems = [
@@ -23,9 +23,11 @@ function AdminLayout() {
     <div className="min-h-screen flex bg-slate-50">
       <aside className="w-60 bg-primary-text text-white flex flex-col shrink-0">
         <div className="flex items-center gap-2 px-5 py-5 border-b border-white/10">
-          <span className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
-            <Cpu size={18} className="text-white" />
-          </span>
+          <img
+            src={`${import.meta.env.BASE_URL}logo-icon.png`}
+            alt="Circuit Bazar"
+            className="w-8 h-8 rounded-lg object-cover"
+          />
           <span className="font-bold">Circuit Bazar</span>
         </div>
 

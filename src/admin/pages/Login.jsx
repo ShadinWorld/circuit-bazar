@@ -1,6 +1,5 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Cpu } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 import Button from "../../components/ui/Button"
 
@@ -43,9 +42,11 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm bg-white rounded-xl shadow-sm border border-slate-100 p-8">
         <div className="flex flex-col items-center mb-8">
-          <span className="w-12 h-12 rounded-lg bg-accent flex items-center justify-center mb-3">
-            <Cpu size={24} className="text-white" />
-          </span>
+          <img
+            src={`${import.meta.env.BASE_URL}logo-icon.png`}
+            alt="Circuit Bazar"
+            className="w-14 h-14 rounded-xl object-cover mb-3"
+          />
           <h1 className="text-lg font-bold text-primary-text">Circuit Bazar Admin</h1>
         </div>
 

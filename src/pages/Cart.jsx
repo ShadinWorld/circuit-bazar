@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { Minus, Plus, Trash2 } from "lucide-react"
+import { Minus, Plus, Trash2, ArrowLeft } from "lucide-react"
 import { useCart } from "../context/CartContext"
 import Button from "../components/ui/Button"
 
@@ -20,7 +20,13 @@ function Cart() {
 
   return (
     <section className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
-      <h1 className="text-2xl font-bold text-primary-text mb-8">Your Cart</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-primary-text">Your Cart</h1>
+        <Link to="/products" className="flex items-center gap-1.5 text-sm text-accent font-medium hover:underline">
+          <ArrowLeft size={16} />
+          Add more items
+        </Link>
+      </div>
 
       <div className="flex flex-col gap-4 mb-8">
         {items.map((item) => (
@@ -70,9 +76,14 @@ function Cart() {
         <span className="text-xl font-bold text-primary-text">৳{totalPrice}</span>
       </div>
 
-      <Link to="/checkout">
-        <Button className="w-full">Proceed to Checkout</Button>
-      </Link>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Link to="/products" className="flex-1">
+          <Button variant="outline" className="w-full">Continue Shopping</Button>
+        </Link>
+        <Link to="/checkout" className="flex-1">
+          <Button className="w-full">Proceed to Checkout</Button>
+        </Link>
+      </div>
     </section>
   )
 }

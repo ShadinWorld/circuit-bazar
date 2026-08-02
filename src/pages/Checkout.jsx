@@ -4,9 +4,12 @@ import { useCart } from "../context/CartContext"
 import { createOrder } from "../firebase/orders"
 import Button from "../components/ui/Button"
 
-// TODO: replace with the real Circuit Bazar WhatsApp business number
-// Format: country code + number, no + or spaces (e.g. 8801XXXXXXXXX)
 const WHATSAPP_NUMBER = "8801636050980"
+
+const deliveryAreas = [
+  { value: "ewu", label: "EWU Campus (Free Delivery)" },
+  { value: "other", label: "Other area (delivery charge may apply)" },
+]
 
 function buildWhatsAppMessage(order) {
   const lines = [
@@ -14,6 +17,7 @@ function buildWhatsAppMessage(order) {
     ``,
     `Name: ${order.customerName}`,
     `Phone: ${order.phone}`,
+    `Delivery area: ${order.deliveryArea === "ewu" ? "EWU Campus (Free Delivery)" : "Other area"}`,
     `Address: ${order.address}`,
     ``,
     `*Items:*`,
@@ -28,24 +32,56 @@ function buildWhatsAppMessage(order) {
 function Checkout() {
   const { items, totalPrice, clearCart } = useCart()
   const navigate = useNavigate()
-  const [form, setForm] = useState({ customerName: "", phone: "", address: "", notes: "" })
+  const [form, setForm] = useState({
+    customerName: "",
+    phone: "",
+    deliveryArea: "ewu",
+    address: "",
+    notes: "",
+  })
+  const [phoneError, setPhoneError] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
+  const isEwu = form.deliveryArea === "ewu"
+
   function handleChange(e) {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }))
+    const { name, value } = e.target
+
+    if (name === "phone") {
+      const digitsOnly = value.replace(/\D/g, "").slice(0, 11)
+      setForm((prev) => ({ ...prev, phone: digitsOnly }))
+      setPhoneError("")
+      return
+    }
+
+    setForm((prev) => ({ ...prev, [name]: value }))
+  }
+
+  function validatePhone(phone) {
+    if (phone.length !== 11) return "Phone number must be exactly 11 digits."
+    if (!phone.startsWith("01")) return "Phone number must start with 01."
+    return ""
   }
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (items.length === 0) return
+
+    const phoneValidationError = validatePhone(form.phone)
+    if (phoneValidationError) {
+      setPhoneError(phoneValidationError)
+      return
+    }
+
     setSubmitting(true)
     setError("")
 
     const order = {
       customerName: form.customerName,
       phone: form.phone,
-      address: form.address,
+      deliveryArea: form.deliveryArea,
+      address: isEwu ? "EWU Campus" : form.address,
       notes: form.notes,
       items: items.map((item) => ({
         productId: item.productId,
@@ -110,23 +146,51 @@ function Checkout() {
           required
           className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
         />
-        <input
-          name="phone"
-          value={form.phone}
+
+        <div>
+          <input
+            name="phone"
+            value={form.phone}
+            onChange={handleChange}
+            placeholder="Phone number (e.g. 01712345678)"
+            required
+            inputMode="numeric"
+            maxLength={11}
+            className={`w-full border rounded-lg px-4 py-2.5 text-sm ${
+              phoneError ? "border-red-300" : "border-slate-200"
+            }`}
+          />
+          {phoneError && <p className="text-xs text-red-600 mt-1">{phoneError}</p>}
+        </div>
+
+        <select
+          name="deliveryArea"
+          value={form.deliveryArea}
           onChange={handleChange}
-          placeholder="Phone number"
-          required
-          className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
-        />
-        <textarea
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          placeholder="Delivery / pickup address"
-          required
-          rows={3}
-          className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
-        />
+          className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm bg-white"
+        >
+          {deliveryAreas.map((area) => (
+            <option key={area.value} value={area.value}>{area.label}</option>
+          ))}
+        </select>
+
+        {isEwu ? (
+          <p className="text-xs text-accent bg-emerald-50 rounded-lg px-4 py-3">
+            No address needed — we'll coordinate campus delivery details with
+            you directly on WhatsApp.
+          </p>
+        ) : (
+          <textarea
+            name="address"
+            value={form.address}
+            onChange={handleChange}
+            placeholder="Full delivery address"
+            required
+            rows={3}
+            className="border border-slate-200 rounded-lg px-4 py-2.5 text-sm"
+          />
+        )}
+
         <textarea
           name="notes"
           value={form.notes}

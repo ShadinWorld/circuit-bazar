@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink } from "react-router-dom"
-import { Menu, X, ShoppingCart, Search, Cpu } from "lucide-react"
+import { Menu, X, ShoppingCart, Search } from "lucide-react"
 import { useCart } from "../../context/CartContext"
 
 const navLinks = [
@@ -24,9 +24,11 @@ function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-100">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <NavLink to="/" className="flex items-center gap-2 shrink-0">
-          <span className="w-9 h-9 rounded-lg bg-accent flex items-center justify-center">
-            <Cpu size={20} className="text-white" />
-          </span>
+          <img
+            src={`${import.meta.env.BASE_URL}logo-icon.png`}
+            alt="Circuit Bazar"
+            className="w-9 h-9 rounded-lg object-cover"
+          />
           <span className="text-lg font-bold text-primary-text">Circuit Bazar</span>
         </NavLink>
 

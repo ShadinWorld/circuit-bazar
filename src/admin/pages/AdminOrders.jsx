@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react"
+import { Link } from "react-router-dom"
+import { FileText } from "lucide-react"
 import { getAllOrders, updateOrderStatus, updatePaymentStatus } from "../../firebase/orders"
 
 const statusColors = {
@@ -73,7 +75,7 @@ function AdminOrders() {
                   ))}
                 </ul>
 
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap items-end gap-4">
                   <label className="text-xs text-slate-400 flex flex-col gap-1">
                     Order Status
                     <select
@@ -99,6 +101,13 @@ function AdminOrders() {
                       <option value="paid">Paid</option>
                     </select>
                   </label>
+
+                  <Link
+                    to={`/admin/invoice/${order.id}`}
+                    className="flex items-center gap-1.5 text-sm text-accent font-medium hover:underline"
+                  >
+                    <FileText size={16} /> Print Invoice
+                  </Link>
                 </div>
               </div>
             )}

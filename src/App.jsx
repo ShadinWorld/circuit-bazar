@@ -23,6 +23,7 @@ import AdminOrders from "./admin/pages/AdminOrders"
 import AdminCustomers from "./admin/pages/AdminCustomers"
 import AdminInventory from "./admin/pages/AdminInventory"
 import Settings from "./admin/pages/Settings"
+import Invoice from "./admin/pages/Invoice"
 
 function App() {
   return (
@@ -46,6 +47,17 @@ function App() {
 
       {/* Admin */}
       <Route path="/admin/login" element={<Login />} />
+
+      {/* Standalone print-friendly page — protected, but not inside the sidebar layout */}
+      <Route
+        path="/admin/invoice/:orderId"
+        element={
+          <RequireAuth>
+            <Invoice />
+          </RequireAuth>
+        }
+      />
+
       <Route
         path="/admin"
         element={
