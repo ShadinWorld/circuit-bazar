@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
+import { motion } from "framer-motion"
 import { getAllProducts } from "../firebase/products"
 import ProductCard from "../components/product/ProductCard"
+import { ProductGridSkeleton } from "../components/ui/Skeleton"
 
 function Offers() {
   const [products, setProducts] = useState([])
@@ -22,7 +24,7 @@ function Offers() {
         Products marked as "Featured" in the admin panel show up here.
       </p>
 
-      {loading && <p className="text-slate-500 text-sm">Loading…</p>}
+      {loading && <ProductGridSkeleton count={4} />}
 
       {!loading && offers.length === 0 && (
         <p className="text-slate-500 text-sm">
@@ -31,11 +33,18 @@ function Offers() {
         </p>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+        initial="hidden"
+        animate="show"
+        variants={{ show: { transition: { staggerChildren: 0.04 } } }}
+      >
         {offers.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <motion.div key={product.id} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+            <ProductCard product={product} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }

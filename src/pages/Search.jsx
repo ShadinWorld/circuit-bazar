@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
 import { Search as SearchIcon } from "lucide-react"
+import { motion } from "framer-motion"
 import { getAllProducts } from "../firebase/products"
 import ProductCard from "../components/product/ProductCard"
+import { ProductGridSkeleton } from "../components/ui/Skeleton"
 
 function Search() {
   const [products, setProducts] = useState([])
@@ -16,7 +18,15 @@ function Search() {
   }, [])
 
   const results = query.trim()
-    ? products.filter((p) => p.name.toLowerCase().includes(query.trim().toLowerCase()))
+    ? products.filter((p) => {
+        const q = query.trim().toLowerCase()
+        return (
+          p.name.toLowerCase().includes(q) ||
+          p.category?.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q) ||
+          (p.tags || []).some((t) => t.toLowerCase().includes(q))
+        )
+      })
     : []
 
   return (
@@ -28,13 +38,13 @@ function Search() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search products…"
+          placeholder="Search products, categories, tags…"
           className="w-full border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
           autoFocus
         />
       </div>
 
-      {loading && <p className="text-slate-500 text-sm">Loading catalog…</p>}
+      {loading && <ProductGridSkeleton count={4} />}
 
       {!loading && query.trim() && results.length === 0 && (
         <p className="text-slate-500 text-sm">No products match "{query}".</p>
@@ -44,11 +54,18 @@ function Search() {
         <p className="text-slate-400 text-sm">Start typing to search the catalog.</p>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+      <motion.div
+        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
+        initial="hidden"
+        animate="show"
+        variants={{ show: { transition: { staggerChildren: 0.04 } } }}
+      >
         {results.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <motion.div key={product.id} variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}>
+            <ProductCard product={product} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </section>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { DollarSign, ShoppingBag, Package, AlertTriangle, TrendingUp, TrendingDown } from "lucide-react"
+import { DollarSign, ShoppingBag, Package, AlertTriangle, TrendingUp, TrendingDown, Undo2 } from "lucide-react"
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
@@ -49,13 +49,21 @@ function Dashboard() {
     return map
   }, [products])
 
-  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0)
+  const totalReturnedAmount = orders.reduce((sum, o) => sum + (o.returnedAmount || 0), 0)
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0) - totalReturnedAmount
+
+  function returnedQtyFor(order, productId) {
+    return (order.returnedItems || [])
+      .filter((r) => r.productId === productId)
+      .reduce((sum, r) => sum + r.quantity, 0)
+  }
 
   const totalCost = orders.reduce((sum, o) => {
     const orderCost = (o.items || []).reduce((s, item) => {
       const product = productMap[item.productId]
       const buyPrice = product?.buyPrice || 0
-      return s + buyPrice * item.quantity
+      const netQty = Math.max(0, item.quantity - returnedQtyFor(o, item.productId))
+      return s + buyPrice * netQty
     }, 0)
     return sum + orderCost
   }, 0)
@@ -102,6 +110,7 @@ function Dashboard() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <StatCard icon={TrendingUp} label="Total Profit" value={`৳${totalProfit}`} />
             <StatCard icon={TrendingDown} label="Total Cost (COGS)" value={`৳${totalCost}`} tone="red" />
+            <StatCard icon={Undo2} label="Returned Value" value={`৳${totalReturnedAmount}`} tone={totalReturnedAmount > 0 ? "red" : "accent"} />
           </div>
 
           <div className="grid lg:grid-cols-2 gap-6 mb-8">

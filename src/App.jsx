@@ -12,6 +12,7 @@ import Contact from "./pages/Contact"
 import About from "./pages/About"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
+import FAQ from "./pages/FAQ"
 import NotFound from "./pages/NotFound"
 
 import Login from "./admin/pages/Login"
@@ -42,6 +43,7 @@ function App() {
         <Route path="/about" element={<About />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 

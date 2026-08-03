@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://shadinworld.github.io/circuit-bazar/sitemap.xml
