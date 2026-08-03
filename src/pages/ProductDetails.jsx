@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Minus, Plus } from "lucide-react"
 import { getProductById, getAllProducts } from "../firebase/products"
+import { getReviewsForProduct } from "../firebase/reviews"
 import { useCart } from "../context/CartContext"
 import { recordProductView } from "../hooks/recentlyViewed"
 import { usePageTitle } from "../hooks/usePageTitle"
@@ -11,6 +12,9 @@ import Skeleton from "../components/ui/Skeleton"
 import ProductCard from "../components/product/ProductCard"
 import ProductReviews from "../components/product/ProductReviews"
 import RecentlyViewed from "../components/product/RecentlyViewed"
+import StarRating from "../components/product/StarRating"
+
+const DESCRIPTION_LIMIT = 220
 
 function ProductDetails() {
   const { productId } = useParams()
@@ -22,6 +26,9 @@ function ProductDetails() {
   const [error, setError] = useState(null)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+  const [activeImage, setActiveImage] = useState(0)
+  const [descExpanded, setDescExpanded] = useState(false)
+  const [reviewSummary, setReviewSummary] = useState({ average: null, count: 0 })
 
   usePageTitle(product?.name || "Product")
 
@@ -29,6 +36,8 @@ function ProductDetails() {
     setLoading(true)
     setAdded(false)
     setQty(1)
+    setActiveImage(0)
+    setDescExpanded(false)
     getProductById(productId)
       .then((p) => {
         setProduct(p)
@@ -36,6 +45,11 @@ function ProductDetails() {
           recordProductView(p)
           getAllProducts().then((all) => {
             setRelated(all.filter((x) => x.category === p.category && x.id !== p.id).slice(0, 4))
+          })
+          getReviewsForProduct(productId).then((reviews) => {
+            if (reviews.length === 0) return
+            const average = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+            setReviewSummary({ average, count: reviews.length })
           })
         }
       })
@@ -74,6 +88,20 @@ function ProductDetails() {
     setAdded(true)
   }
 
+  // Backward compatible: products created before the multi-image gallery
+  // only have a single `imageUrl`. Newer products can have an `images`
+  // array (added from the admin panel).
+  const gallery = product.images?.length ? product.images : (product.imageUrl ? [product.imageUrl] : [])
+  const mainImage = gallery[activeImage] || gallery[0]
+
+  const description = product.description || ""
+  const isLongDescription = description.length > DESCRIPTION_LIMIT
+  const shownDescription = descExpanded || !isLongDescription
+    ? description
+    : description.slice(0, DESCRIPTION_LIMIT).trimEnd() + "…"
+
+  const soldCount = product.soldCount || 0
+
   return (
     <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
       <motion.div
@@ -82,19 +110,67 @@ function ProductDetails() {
         transition={{ duration: 0.35 }}
         className="grid sm:grid-cols-2 gap-10"
       >
-        <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
-          {product.imageUrl ? (
-            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            <span className="text-slate-400 text-sm">No image</span>
+        <div>
+          <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
+            {mainImage ? (
+              <img src={mainImage} alt={product.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-slate-400 text-sm">No image</span>
+            )}
+          </div>
+
+          {gallery.length > 1 && (
+            <div className="flex items-center gap-2 mt-3">
+              {gallery.map((img, i) => (
+                <button
+                  key={img + i}
+                  onClick={() => setActiveImage(i)}
+                  aria-label={`View image ${i + 1}`}
+                  className={`relative w-14 h-14 rounded-lg overflow-hidden border-2 shrink-0 ${
+                    i === activeImage ? "border-accent" : "border-transparent"
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <span className="absolute bottom-0.5 right-0.5 bg-black/60 text-white text-[9px] leading-none rounded px-1 py-0.5">
+                    {i + 1}
+                  </span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 
         <div>
           <p className="text-xs text-slate-400 mb-2">{product.category}</p>
-          <h1 className="text-2xl sm:text-3xl font-bold text-primary-text mb-3">{product.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-primary-text mb-2">{product.name}</h1>
+
+          <div className="flex items-center gap-3 mb-3 flex-wrap">
+            {soldCount > 0 && (
+              <span className="text-xs text-slate-400">{soldCount} sold</span>
+            )}
+            {reviewSummary.count > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <StarRating value={Math.round(reviewSummary.average)} size={14} />
+                {reviewSummary.average.toFixed(1)} ({reviewSummary.count})
+              </span>
+            )}
+          </div>
+
           <p className="text-2xl font-bold text-accent mb-4">৳{product.sellPrice}</p>
-          <p className="text-slate-600 text-sm leading-relaxed mb-6">{product.description}</p>
+
+          <p className="text-slate-600 text-sm leading-relaxed mb-2">
+            {shownDescription}
+          </p>
+          {isLongDescription && (
+            <button
+              onClick={() => setDescExpanded((v) => !v)}
+              className="text-xs text-accent font-medium hover:underline mb-4"
+            >
+              {descExpanded ? "Show less" : "Read More"}
+            </button>
+          )}
+          {!isLongDescription && <div className="mb-4" />}
+
           <p className="text-xs text-slate-400 mb-6">
             {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
           </p>

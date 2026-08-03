@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
 import { getAllProducts } from "../firebase/products"
+import { getAllReviews, buildRatingMap } from "../firebase/reviews"
 import ProductCard from "../components/product/ProductCard"
 import { ProductGridSkeleton } from "../components/ui/Skeleton"
 import { usePageTitle } from "../hooks/usePageTitle"
@@ -9,6 +10,7 @@ import { usePageTitle } from "../hooks/usePageTitle"
 function Products() {
   usePageTitle("Products")
   const [products, setProducts] = useState([])
+  const [ratingMap, setRatingMap] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchParams, setSearchParams] = useSearchParams()
@@ -21,9 +23,14 @@ function Products() {
       .then(setProducts)
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false))
+
+    getAllReviews()
+      .then((reviews) => setRatingMap(buildRatingMap(reviews)))
+      .catch(() => {})
   }, [])
 
   const categories = [...new Set(products.map((p) => p.category))].sort()
+  const featuredProducts = products.filter((p) => p.featured).slice(0, 5)
 
   let visibleProducts = activeCategory
     ? products.filter((p) => p.category === activeCategory)
@@ -71,21 +78,29 @@ function Products() {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-4 mb-8">
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
-        >
-          <option value="newest">Newest</option>
-          <option value="price-low">Price: Low to High</option>
-          <option value="price-high">Price: High to Low</option>
-        </select>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-4">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="newest">Newest</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+          </select>
 
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} />
-          In stock only
-        </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={inStockOnly} onChange={(e) => setInStockOnly(e.target.checked)} />
+            In stock only
+          </label>
+        </div>
+
+        {!loading && !error && (
+          <p className="text-xs text-slate-400">
+            Showing {visibleProducts.length} of {products.length} products
+          </p>
+        )}
       </div>
 
       {loading && <ProductGridSkeleton />}
@@ -101,21 +116,48 @@ function Products() {
         </div>
       )}
 
-      <motion.div
-        className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5"
-        initial="hidden"
-        animate="show"
-        variants={{ show: { transition: { staggerChildren: 0.04 } } }}
-      >
-        {!loading && visibleProducts.map((product) => (
-          <motion.div
-            key={product.id}
-            variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
-          >
-            <ProductCard product={product} />
-          </motion.div>
-        ))}
-      </motion.div>
+      <div className="grid grid-cols-1 lg:grid-cols-[3fr_1fr] gap-8 items-start">
+        <motion.div
+          className="grid grid-cols-2 sm:grid-cols-3 gap-5"
+          initial="hidden"
+          animate="show"
+          variants={{ show: { transition: { staggerChildren: 0.04 } } }}
+        >
+          {!loading && visibleProducts.map((product) => (
+            <motion.div
+              key={product.id}
+              variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+            >
+              <ProductCard product={product} rating={ratingMap[product.id]} />
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {featuredProducts.length > 0 && (
+          <aside className="border border-slate-100 rounded-xl p-4 lg:sticky lg:top-6">
+            <h3 className="text-sm font-semibold text-primary-text mb-3 flex items-center gap-1.5">
+              ⭐ Featured Products
+            </h3>
+            <div className="flex flex-col gap-3">
+              {featuredProducts.map((p) => (
+                <Link key={p.id} to={`/products/${p.id}`} className="flex items-center gap-3 group">
+                  <div className="w-12 h-12 bg-slate-50 rounded-lg overflow-hidden flex items-center justify-center shrink-0">
+                    {(p.images?.[0] || p.imageUrl) ? (
+                      <img src={p.images?.[0] || p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[9px] text-slate-400">No image</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-primary-text truncate group-hover:text-accent">{p.name}</p>
+                    <p className="text-xs text-accent font-bold">৳{p.sellPrice}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </aside>
+        )}
+      </div>
     </section>
   )
 }

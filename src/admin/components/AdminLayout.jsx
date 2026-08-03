@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router-dom"
-import { LayoutDashboard, Package, ShoppingBag, Users, Boxes, Settings as SettingsIcon, LogOut, Menu, X } from "lucide-react"
+import { LayoutDashboard, Package, ShoppingBag, Users, Boxes, HelpCircle, Settings as SettingsIcon, LogOut, Menu, X } from "lucide-react"
 import { useAuth } from "../../context/AuthContext"
 
 const navItems = [
@@ -9,6 +9,7 @@ const navItems = [
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
   { to: "/admin/customers", label: "Customers", icon: Users },
   { to: "/admin/inventory", label: "Inventory", icon: Boxes },
+  { to: "/admin/faq", label: "FAQ", icon: HelpCircle },
   { to: "/admin/settings", label: "Settings", icon: SettingsIcon },
 ]
 

@@ -10,12 +10,16 @@ const categories = [
 ]
 
 const emptyForm = {
-  name: "", category: categories[0], description: "", imageUrl: "",
+  name: "", category: categories[0], description: "", imagesText: "",
   buyPrice: "", sellPrice: "", stock: "", sku: "", featured: false, status: "active",
 }
 
 function ProductForm({ initial, onCancel, onSaved }) {
-  const [form, setForm] = useState(initial || emptyForm)
+  const [form, setForm] = useState(
+    initial
+      ? { ...initial, imagesText: (initial.images?.length ? initial.images : [initial.imageUrl]).filter(Boolean).join("\n") }
+      : emptyForm
+  )
   const [saving, setSaving] = useState(false)
   const isEdit = Boolean(initial?.id)
 
@@ -27,8 +31,12 @@ function ProductForm({ initial, onCancel, onSaved }) {
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
+    const images = form.imagesText.split("\n").map((s) => s.trim()).filter(Boolean)
+    const { imagesText, ...rest } = form
     const payload = {
-      ...form,
+      ...rest,
+      images,
+      imageUrl: images[0] || "",
       buyPrice: Number(form.buyPrice) || 0,
       sellPrice: Number(form.sellPrice) || 0,
       stock: Number(form.stock) || 0,
@@ -68,8 +76,19 @@ function ProductForm({ initial, onCancel, onSaved }) {
           <textarea name="description" value={form.description} onChange={handleChange} placeholder="Description" rows={3}
             className="border border-slate-200 rounded-lg px-4 py-2 text-sm" />
 
-          <input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="Image URL"
-            className="border border-slate-200 rounded-lg px-4 py-2 text-sm" />
+          <div>
+            <textarea
+              name="imagesText"
+              value={form.imagesText}
+              onChange={handleChange}
+              placeholder="Image URLs — one per line. The first one is used as the main/thumbnail image."
+              rows={3}
+              className="border border-slate-200 rounded-lg px-4 py-2 text-sm w-full"
+            />
+            <p className="text-xs text-slate-400 mt-1">
+              Add multiple lines for a photo gallery on the product page.
+            </p>
+          </div>
 
           <div className="grid grid-cols-2 gap-4">
             <input name="buyPrice" value={form.buyPrice} onChange={handleChange} type="number" placeholder="Buy price"

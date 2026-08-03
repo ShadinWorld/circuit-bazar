@@ -129,10 +129,20 @@ function Checkout() {
 
   return (
     <section className="max-w-xl mx-auto px-4 sm:px-6 py-16">
+      <div className="bg-amber-50 text-amber-700 text-xs sm:text-sm rounded-lg px-4 py-3 mb-6 text-center">
+        For any order-related questions, contact us at{" "}
+        <a href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer" className="font-semibold underline">
+          +{WHATSAPP_NUMBER}
+        </a>
+      </div>
+
       <h1 className="text-2xl font-bold text-primary-text mb-2">Checkout</h1>
-      <p className="text-sm text-slate-500 mb-8">
+      <p className="text-sm text-slate-500 mb-2">
         Fill in your details — we'll save your order and open WhatsApp so you
         can confirm it with us directly.
+      </p>
+      <p className="text-xs text-accent bg-emerald-50 rounded-lg px-3 py-2 mb-8 inline-block">
+        This is a Cash on Delivery service only — you pay when your order arrives.
       </p>
 
       <div className="border border-slate-100 rounded-xl p-4 mb-8">

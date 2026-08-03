@@ -1,46 +1,48 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
+import { Truck } from "lucide-react"
 import { getAllProducts } from "../firebase/products"
-import Button from "../components/ui/Button"
+import { getAllReviews, buildRatingMap } from "../firebase/reviews"
 import ProductCard from "../components/product/ProductCard"
+import HeroCarousel from "../components/layout/HeroCarousel"
+import CategoryGrid from "../components/layout/CategoryGrid"
 import { ProductGridSkeleton } from "../components/ui/Skeleton"
 import { usePageTitle } from "../hooks/usePageTitle"
 
 function Home() {
   usePageTitle("Home")
+  const [allProducts, setAllProducts] = useState([])
   const [products, setProducts] = useState([])
+  const [ratingMap, setRatingMap] = useState({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     getAllProducts()
-      .then((all) => setProducts(all.slice(0, 8)))
+      .then((all) => {
+        setAllProducts(all)
+        setProducts(all.slice(0, 8))
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
+
+    getAllReviews()
+      .then((reviews) => setRatingMap(buildRatingMap(reviews)))
+      .catch(() => {})
   }, [])
 
   return (
     <>
-      <motion.section
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="max-w-6xl mx-auto px-4 sm:px-6 py-20 text-center"
-      >
-        <h1 className="text-4xl sm:text-5xl font-extrabold text-primary-text mb-4 leading-tight">
-          Every component your <br className="hidden sm:block" /> next project needs
-        </h1>
-        <p className="text-slate-500 max-w-xl mx-auto mb-8">
-          ICs, sensors, modules, breadboards, and robotics parts — in stock and
-          ready to order.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link to="/products"><Button>Browse Products</Button></Link>
-          <Link to="/offers"><Button variant="outline">View Offers</Button></Link>
-        </div>
-      </motion.section>
+      <HeroCarousel />
 
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-6">
+        <div className="flex items-center justify-center gap-2.5 bg-emerald-50 text-accent rounded-xl px-5 py-3 text-sm font-semibold">
+          <Truck size={18} />
+          Cash on Delivery available — pay when your order arrives
+        </div>
+      </div>
+
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 pt-10">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-primary-text">Latest Arrivals</h2>
           <Link to="/products" className="text-sm text-accent font-medium hover:underline">
@@ -65,11 +67,13 @@ function Home() {
               key={product.id}
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
             >
-              <ProductCard product={product} />
+              <ProductCard product={product} rating={ratingMap[product.id]} />
             </motion.div>
           ))}
         </motion.div>
       </section>
+
+      {!loading && <CategoryGrid products={allProducts} />}
     </>
   )
 }

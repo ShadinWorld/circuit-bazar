@@ -1,6 +1,6 @@
 import {
   collection, doc, addDoc, updateDoc, getDoc, getDocs,
-  query, orderBy, serverTimestamp, writeBatch, increment,
+  query, orderBy, where, serverTimestamp, writeBatch, increment,
 } from "firebase/firestore"
 import { db } from "./config"
 import { upsertCustomerFromOrder } from "./customers"
@@ -46,13 +46,32 @@ export async function getOrderById(id) {
 }
 
 async function adjustStock(items, direction) {
-  // direction: -1 to deduct, +1 to restore
+  // direction: -1 to deduct (and count as sold), +1 to restore (and undo
+  // the sold count, e.g. if a "delivered" order is moved back to another
+  // status by mistake).
   const batch = writeBatch(db)
   ;(items || []).forEach((item) => {
     const productRef = doc(db, "products", item.productId)
-    batch.update(productRef, { stock: increment(direction * item.quantity) })
+    batch.update(productRef, {
+      stock: increment(direction * item.quantity),
+      soldCount: increment(direction === -1 ? item.quantity : -item.quantity),
+    })
   })
   await batch.commit()
+}
+
+// Used by the "verified purchase" review check: does this phone number
+// have a delivered order that included this product? Queries by phone
+// only (no composite index needed) and filters the rest client-side,
+// matching the pattern already used in firebase/reviews.js.
+export async function hasDeliveredPurchase(phone, productId) {
+  const q = query(ordersRef, where("phone", "==", phone))
+  const snapshot = await getDocs(q)
+  return snapshot.docs.some((docSnap) => {
+    const order = docSnap.data()
+    if (order.orderStatus !== "delivered") return false
+    return (order.items || []).some((item) => item.productId === productId)
+  })
 }
 
 // Rule: stock is deducted the moment an order first becomes "delivered",

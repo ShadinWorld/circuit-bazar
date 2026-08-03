@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Products: public read; only logged-in admin can write.
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Orders: anyone can create (guest checkout), but the payload is
+    // locked down so a customer can't fake status or invoice numbers.
+    //
+    // Read access is split in two:
+    //  - The admin (logged in) can read everything, always.
+    //  - Anyone else can ONLY read an order that is already "delivered" —
+    //    this is what powers the "verified purchase" review check
+    //    (a customer's browser queries orders by their own phone number
+    //    to confirm they received this product before letting them post
+    //    a review). It also means anyone who already knows a specific
+    //    phone number could look up that phone's delivered order details
+    //    (name/address/items). That's an accepted trade-off for now to
+    //    avoid needing a Cloud Function — pending/unconfirmed orders are
+    //    NOT exposed this way, only ones already marked delivered.
+    //    If this ever needs to be tightened further, move the purchase
+    //    check into a Cloud Function instead of a public Firestore read.
+    match /orders/{orderId} {
+      allow create: if
+        request.resource.data.orderStatus == "pending" &&
+        request.resource.data.paymentStatus == "unpaid" &&
+        request.resource.data.keys().hasAll(
+          ["customerName", "phone", "items", "total", "invoiceNumber", "orderStatus", "paymentStatus"]
+        );
+      allow read: if request.auth != null || resource.data.orderStatus == "delivered";
+      allow update, delete: if request.auth != null;
+    }
+
+    // Customers: created/updated automatically after checkout, so write
+    // stays open — but READ is admin-only, otherwise anyone can scrape
+    // every customer's name/phone/spend.
+    match /customers/{customerId} {
+      allow read: if request.auth != null;
+      allow write: if true;
+    }
+
+    // Invoice counter: keep readable (checkout may want to preview it),
+    // but writes must go through the transaction pattern — only allow
+    // the value to increase by exactly 1 each time, and never let it
+    // be deleted or reset backwards.
+    match /counters/{counterId} {
+      allow read: if true;
+      allow create: if request.resource.data.value == 1;
+      allow update: if request.resource.data.value == resource.data.value + 1;
+      allow delete: if false;
+    }
+
+    // Delivery areas: public read, admin-only write.
+    match /deliveryAreas/{areaId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // Reviews: public read/create, but validate shape so it can't be
+    // spammed with junk ratings or huge text blobs; only admin can
+    // edit/delete. The "only delivered purchasers can review" check is
+    // done client-side (against the orders collection) before this
+    // create request is even sent — these rules can't independently
+    // re-verify that without also opening up order reads to everyone,
+    // which we intentionally do NOT want (see customers/orders above).
+    // If that's a concern, the stronger fix is a Cloud Function that
+    // verifies the purchase server-side before writing the review.
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string &&
+        request.resource.data.comment.size() < 1000 &&
+        // phone numbers must never be stored on the review document
+        !("phone" in request.resource.data);
+      allow update, delete: if request.auth != null;
+    }
+
+    // FAQs: public read (shown on the FAQ page); only the logged-in
+    // admin can add/edit/delete/reorder them from the admin panel.
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+  }
+}

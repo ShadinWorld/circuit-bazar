@@ -25,3 +25,20 @@ export async function getAllReviews() {
   const snapshot = await getDocs(reviewsRef)
   return snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
 }
+
+// Turns a flat list of reviews into { [productId]: { average, count } },
+// used to show a rating summary on product cards without a per-product
+// query for every card.
+export function buildRatingMap(reviews) {
+  const map = {}
+  reviews.forEach((r) => {
+    if (!map[r.productId]) map[r.productId] = { total: 0, count: 0 }
+    map[r.productId].total += r.rating
+    map[r.productId].count += 1
+  })
+  Object.keys(map).forEach((productId) => {
+    const { total, count } = map[productId]
+    map[productId] = { average: total / count, count }
+  })
+  return map
+}

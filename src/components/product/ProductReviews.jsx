@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { getReviewsForProduct, addReview } from "../../firebase/reviews"
+import { hasDeliveredPurchase } from "../../firebase/orders"
 import StarRating from "./StarRating"
 import Button from "../ui/Button"
 
 function ProductReviews({ productId }) {
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ name: "", rating: 0, comment: "" })
+  const [form, setForm] = useState({ name: "", phone: "", rating: 0, comment: "" })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [verifyError, setVerifyError] = useState("")
 
   function load() {
     setLoading(true)
@@ -24,18 +26,32 @@ function ProductReviews({ productId }) {
 
   async function handleSubmit(e) {
     e.preventDefault()
-    if (form.rating === 0 || !form.name.trim()) return
+    if (form.rating === 0 || !form.name.trim() || !form.phone.trim()) return
+    setVerifyError("")
     setSubmitting(true)
     try {
+      const eligible = await hasDeliveredPurchase(form.phone.trim(), productId)
+      if (!eligible) {
+        setVerifyError(
+          "Only customers who purchased and received this product can leave a review. " +
+          "We couldn't find a delivered order for this product under that phone number."
+        )
+        return
+      }
+
+      // Note: the phone number is used only to verify the purchase — it's
+      // never saved on the review document, so it's never shown publicly.
       await addReview({
         productId,
         name: form.name.trim(),
         rating: form.rating,
         comment: form.comment.trim(),
       })
-      setForm({ name: "", rating: 0, comment: "" })
+      setForm({ name: "", phone: "", rating: 0, comment: "" })
       setSubmitted(true)
       load()
+    } catch {
+      setVerifyError("Something went wrong verifying your purchase. Please try again.")
     } finally {
       setSubmitting(false)
     }
@@ -77,18 +93,16 @@ function ProductReviews({ productId }) {
       </div>
 
       <div className="bg-slate-50 rounded-xl p-5">
-        <h3 className="font-semibold text-primary-text text-sm mb-4">Write a review</h3>
+        <h3 className="font-semibold text-primary-text text-sm mb-1">Write a review</h3>
+        <p className="text-xs text-slate-400 mb-4">
+          Only customers who've received a delivered order for this product can leave a review.
+          Your phone number is only used to verify this and is never shown publicly.
+        </p>
 
         {submitted ? (
           <p className="text-sm text-accent">Thanks for your review!</p>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-            <StarRating
-              value={form.rating}
-              interactive
-              onChange={(rating) => setForm((prev) => ({ ...prev, rating }))}
-              size={22}
-            />
             <input
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
@@ -96,15 +110,42 @@ function ProductReviews({ productId }) {
               required
               className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
             />
-            <textarea
-              value={form.comment}
-              onChange={(e) => setForm((prev) => ({ ...prev, comment: e.target.value }))}
-              placeholder="Share your experience with this product (optional)"
-              rows={3}
-              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+
+            <StarRating
+              value={form.rating}
+              interactive
+              onChange={(rating) => setForm((prev) => ({ ...prev, rating }))}
+              size={22}
             />
-            <Button type="submit" disabled={submitting || form.rating === 0} className="w-fit">
-              {submitting ? "Submitting…" : "Submit Review"}
+
+            {form.rating > 0 && (
+              <>
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm((prev) => ({ ...prev, phone: e.target.value.replace(/\D/g, "").slice(0, 11) }))}
+                  placeholder="Phone number used when ordering (e.g. 01712345678)"
+                  required
+                  inputMode="numeric"
+                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+                />
+                <textarea
+                  value={form.comment}
+                  onChange={(e) => setForm((prev) => ({ ...prev, comment: e.target.value }))}
+                  placeholder="Share your experience with this product (optional)"
+                  rows={3}
+                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+                />
+              </>
+            )}
+
+            {verifyError && <p className="text-xs text-red-600">{verifyError}</p>}
+
+            <Button
+              type="submit"
+              disabled={submitting || form.rating === 0 || !form.name.trim() || !form.phone.trim()}
+              className="w-fit"
+            >
+              {submitting ? "Verifying…" : "Submit Review"}
             </Button>
           </form>
         )}

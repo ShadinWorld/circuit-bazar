@@ -71,9 +71,23 @@ function Cart() {
         ))}
       </div>
 
-      <div className="flex items-center justify-between border-t border-slate-100 pt-6 mb-6">
-        <span className="text-slate-500">Total</span>
-        <span className="text-xl font-bold text-primary-text">৳{totalPrice}</span>
+      <div className="border-t border-slate-100 pt-6 mb-6 flex flex-col gap-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">Subtotal</span>
+          <span className="text-primary-text font-medium">৳{totalPrice}</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">Delivery Charge</span>
+          <span className="text-slate-400">Calculated at checkout</span>
+        </div>
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-500">Discount</span>
+          <span className="text-slate-400">-৳0</span>
+        </div>
+        <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+          <span className="text-slate-500">Total</span>
+          <span className="text-xl font-bold text-primary-text">৳{totalPrice}</span>
+        </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
