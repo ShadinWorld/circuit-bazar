@@ -13,6 +13,7 @@ import About from "./pages/About"
 import Privacy from "./pages/Privacy"
 import Terms from "./pages/Terms"
 import FAQ from "./pages/FAQ"
+import Testimonials from "./pages/Testimonials"
 import NotFound from "./pages/NotFound"
 
 import Login from "./admin/pages/Login"
@@ -24,6 +25,7 @@ import AdminOrders from "./admin/pages/AdminOrders"
 import AdminCustomers from "./admin/pages/AdminCustomers"
 import AdminInventory from "./admin/pages/AdminInventory"
 import AdminFAQ from "./admin/pages/AdminFAQ"
+import AdminTestimonials from "./admin/pages/AdminTestimonials"
 import Settings from "./admin/pages/Settings"
 import Invoice from "./admin/pages/Invoice"
 
@@ -45,6 +47,7 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/testimonials" element={<Testimonials />} />
         <Route path="*" element={<NotFound />} />
       </Route>
 
@@ -75,6 +78,7 @@ function App() {
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="inventory" element={<AdminInventory />} />
         <Route path="faq" element={<AdminFAQ />} />
+        <Route path="testimonials" element={<AdminTestimonials />} />
         <Route path="settings" element={<Settings />} />
       </Route>
     </Routes>

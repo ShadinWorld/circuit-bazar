@@ -136,11 +136,7 @@ function Checkout() {
         </a>
       </div>
 
-      <h1 className="text-2xl font-bold text-primary-text mb-2">Checkout</h1>
-      <p className="text-sm text-slate-500 mb-2">
-        Fill in your details — we'll save your order and open WhatsApp so you
-        can confirm it with us directly.
-      </p>
+      <h1 className="text-2xl font-bold text-primary-text mb-3">Checkout</h1>
       <p className="text-xs text-accent bg-emerald-50 rounded-lg px-3 py-2 mb-8 inline-block">
         This is a Cash on Delivery service only — you pay when your order arrives.
       </p>

@@ -12,7 +12,7 @@ import Skeleton from "../components/ui/Skeleton"
 import ProductCard from "../components/product/ProductCard"
 import ProductReviews from "../components/product/ProductReviews"
 import RecentlyViewed from "../components/product/RecentlyViewed"
-import StarRating from "../components/product/StarRating"
+import RatingSummary from "../components/product/RatingSummary"
 
 const DESCRIPTION_LIMIT = 220
 
@@ -111,9 +111,13 @@ function ProductDetails() {
         className="grid sm:grid-cols-2 gap-10"
       >
         <div>
-          <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center">
+          <div className="aspect-square bg-slate-50 rounded-xl overflow-hidden flex items-center justify-center group">
             {mainImage ? (
-              <img src={mainImage} alt={product.name} className="w-full h-full object-cover" />
+              <img
+                src={mainImage}
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+              />
             ) : (
               <span className="text-slate-400 text-sm">No image</span>
             )}
@@ -149,10 +153,7 @@ function ProductDetails() {
               <span className="text-xs text-slate-400">{soldCount} sold</span>
             )}
             {reviewSummary.count > 0 && (
-              <span className="flex items-center gap-1.5 text-xs text-slate-400">
-                <StarRating value={Math.round(reviewSummary.average)} size={14} />
-                {reviewSummary.average.toFixed(1)} ({reviewSummary.count})
-              </span>
+              <RatingSummary average={reviewSummary.average} count={reviewSummary.count} size={14} />
             )}
           </div>
 
@@ -172,7 +173,7 @@ function ProductDetails() {
           {!isLongDescription && <div className="mb-4" />}
 
           <p className="text-xs text-slate-400 mb-6">
-            {product.stock > 0 ? `${product.stock} in stock` : "Out of stock"}
+            {product.stock > 0 ? "In stock" : "Out of stock"}
           </p>
 
           {product.stock > 0 && (

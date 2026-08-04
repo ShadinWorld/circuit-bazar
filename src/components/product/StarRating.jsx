@@ -15,7 +15,12 @@ function StarRating({ value = 0, size = 16, interactive = false, onChange }) {
         >
           <Star
             size={size}
-            className={star <= value ? "fill-amber-400 text-amber-400" : "text-slate-200"}
+            strokeWidth={2.25}
+            className={
+              star <= value
+                ? "fill-amber-400 text-amber-500"
+                : "fill-slate-100 text-slate-200"
+            }
           />
         </button>
       ))}

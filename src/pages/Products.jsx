@@ -43,6 +43,12 @@ function Products() {
   visibleProducts = [...visibleProducts].sort((a, b) => {
     if (sortBy === "price-low") return a.sellPrice - b.sellPrice
     if (sortBy === "price-high") return b.sellPrice - a.sellPrice
+    if (sortBy === "best-selling") return (b.soldCount || 0) - (a.soldCount || 0)
+    if (sortBy === "top-rated") {
+      const avgA = ratingMap[a.id]?.average || 0
+      const avgB = ratingMap[b.id]?.average || 0
+      return avgB - avgA
+    }
     return 0 // "newest" — keep the order Firestore already gave us
   })
 
@@ -86,6 +92,8 @@ function Products() {
             className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
           >
             <option value="newest">Newest</option>
+            <option value="best-selling">Best Selling</option>
+            <option value="top-rated">Highest Rated</option>
             <option value="price-low">Price: Low to High</option>
             <option value="price-high">Price: High to Low</option>
           </select>

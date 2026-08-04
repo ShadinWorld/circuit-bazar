@@ -4,9 +4,11 @@ import { motion } from "framer-motion"
 import { Truck } from "lucide-react"
 import { getAllProducts } from "../firebase/products"
 import { getAllReviews, buildRatingMap } from "../firebase/reviews"
+import { getAllTestimonials } from "../firebase/testimonials"
 import ProductCard from "../components/product/ProductCard"
 import HeroCarousel from "../components/layout/HeroCarousel"
 import CategoryGrid from "../components/layout/CategoryGrid"
+import StarRating from "../components/product/StarRating"
 import { ProductGridSkeleton } from "../components/ui/Skeleton"
 import { usePageTitle } from "../hooks/usePageTitle"
 
@@ -15,6 +17,7 @@ function Home() {
   const [allProducts, setAllProducts] = useState([])
   const [products, setProducts] = useState([])
   const [ratingMap, setRatingMap] = useState({})
+  const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -28,6 +31,10 @@ function Home() {
 
     getAllReviews()
       .then((reviews) => setRatingMap(buildRatingMap(reviews)))
+      .catch(() => {})
+
+    getAllTestimonials()
+      .then((items) => setTestimonials(items.slice(0, 3)))
       .catch(() => {})
   }, [])
 
@@ -74,6 +81,36 @@ function Home() {
       </section>
 
       {!loading && <CategoryGrid products={allProducts} />}
+
+      {testimonials.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-primary-text">What Customers Say</h2>
+            <Link to="/testimonials" className="text-sm text-accent font-medium hover:underline">
+              View all →
+            </Link>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-5">
+            {testimonials.map((t) => (
+              <div key={t.id} className="border border-slate-100 rounded-xl p-4">
+                {t.imageUrl && (
+                  <img
+                    src={t.imageUrl}
+                    alt=""
+                    className="w-full h-32 object-cover rounded-lg mb-3"
+                    onError={(e) => { e.target.style.display = "none" }}
+                  />
+                )}
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-primary-text text-sm">{t.name}</p>
+                  <StarRating value={t.rating} size={13} />
+                </div>
+                {t.comment && <p className="text-xs text-slate-600 line-clamp-3">{t.comment}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </>
   )
 }

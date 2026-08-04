@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useParams, Link } from "react-router-dom"
-import { Printer, ArrowLeft } from "lucide-react"
+import { Copy, Check, ArrowLeft } from "lucide-react"
 import { getOrderById } from "../../firebase/orders"
 
 const WHATSAPP_NUMBER = "8801636050980"
@@ -13,10 +13,34 @@ function formatDate(timestamp) {
   })
 }
 
+function buildCopyText(order, subtotal) {
+  const lines = [
+    `🧾 *Circuit Bazar — Invoice #${order.invoiceNumber || "—"}*`,
+    `📱 WhatsApp: ${WHATSAPP_NUMBER.replace("880", "0")}`,
+    `📍 ${ADDRESS}`,
+    ``,
+    `👤 Bill To: ${order.customerName}`,
+    `📞 Phone: ${order.phone}`,
+    `📅 Date: ${formatDate(order.orderDate)}`,
+    ``,
+    `*Items:*`,
+    ...(order.items || []).map(
+      (item, i) => `${i + 1}. ${item.name} x${item.quantity} = Tk. ${item.price * item.quantity}`
+    ),
+    ``,
+    `Subtotal: Tk. ${subtotal}`,
+    `*Total: Tk. ${order.total}*`,
+    ``,
+    `Thank you for shopping with Circuit Bazar! 💚`,
+  ]
+  return lines.join("\n")
+}
+
 function Invoice() {
   const { orderId } = useParams()
   const [order, setOrder] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     getOrderById(orderId).then(setOrder).finally(() => setLoading(false))
@@ -27,21 +51,43 @@ function Invoice() {
 
   const subtotal = (order.items || []).reduce((sum, item) => sum + item.price * item.quantity, 0)
 
+  async function handleCopy() {
+    const text = buildCopyText(order, subtotal)
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Fallback for browsers/contexts without Clipboard API access
+      const textarea = document.createElement("textarea")
+      textarea.value = text
+      document.body.appendChild(textarea)
+      textarea.select()
+      document.execCommand("copy")
+      document.body.removeChild(textarea)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto mb-4 flex items-center justify-between print:hidden">
+      <div className="max-w-2xl mx-auto mb-4 flex items-center justify-between">
         <Link to="/admin/orders" className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-accent">
           <ArrowLeft size={16} /> Back to Orders
         </Link>
         <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 bg-accent text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700"
+          onClick={handleCopy}
+          className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-colors ${
+            copied ? "bg-emerald-600 text-white" : "bg-accent text-white hover:bg-emerald-700"
+          }`}
         >
-          <Printer size={16} /> Print / Save as PDF
+          {copied ? <Check size={16} /> : <Copy size={16} />}
+          {copied ? "Copied!" : "Copy Invoice"}
         </button>
       </div>
 
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-8 print:shadow-none print:rounded-none">
+      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-sm p-8">
         <div className="flex items-center gap-3 mb-2">
           <img src={`${import.meta.env.BASE_URL}logo-icon.png`} alt="Circuit Bazar" className="w-12 h-12 rounded-lg object-cover" />
           <div>

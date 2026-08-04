@@ -88,5 +88,25 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null;
     }
+
+    // Testimonials: overall shop reviews (not tied to one product),
+    // shown on the /testimonials page and Home. Same validation
+    // approach as reviews above — public read/create with shape
+    // validation, no phone stored, admin-only edit/delete for
+    // moderation (important here since these can include an image
+    // link, which carries more spam/abuse risk than a text review).
+    match /testimonials/{testimonialId} {
+      allow read: if true;
+      allow create: if
+        request.resource.data.rating is int &&
+        request.resource.data.rating >= 1 &&
+        request.resource.data.rating <= 5 &&
+        request.resource.data.comment is string &&
+        request.resource.data.comment.size() < 1000 &&
+        request.resource.data.imageUrl is string &&
+        request.resource.data.imageUrl.size() < 500 &&
+        !("phone" in request.resource.data);
+      allow update, delete: if request.auth != null;
+    }
   }
 }

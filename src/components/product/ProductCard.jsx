@@ -1,17 +1,21 @@
 import { Link } from "react-router-dom"
 import Card from "../ui/Card"
-import StarRating from "./StarRating"
+import RatingSummary from "./RatingSummary"
 
 function ProductCard({ product, rating }) {
   const image = product.images?.[0] || product.imageUrl
   const soldCount = product.soldCount || 0
 
   return (
-    <Link to={`/products/${product.id}`}>
+    <Link to={`/products/${product.id}`} className="group">
       <Card className="p-4 h-full flex flex-col">
         <div className="aspect-square bg-slate-50 rounded-lg mb-3 flex items-center justify-center overflow-hidden relative">
           {image ? (
-            <img src={image} alt={product.name} className="w-full h-full object-cover" />
+            <img
+              src={image}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-110"
+            />
           ) : (
             <span className="text-xs text-slate-400">No image</span>
           )}
@@ -31,9 +35,8 @@ function ProductCard({ product, rating }) {
         )}
 
         {rating?.count > 0 && (
-          <div className="flex items-center gap-1 mb-2">
-            <StarRating value={Math.round(rating.average)} size={12} />
-            <span className="text-[11px] text-slate-400">({rating.count})</span>
+          <div className="mb-2">
+            <RatingSummary average={rating.average} count={rating.count} />
           </div>
         )}
 

@@ -45,6 +45,7 @@ function Footer() {
           <ul className="space-y-2 text-sm text-slate-300">
             <li><Link to="/about" className="hover:text-accent">About</Link></li>
             <li><Link to="/faq" className="hover:text-accent">FAQ</Link></li>
+            <li><Link to="/testimonials" className="hover:text-accent">Customer Reviews</Link></li>
             <li><Link to="/contact" className="hover:text-accent">Contact</Link></li>
             <li><Link to="/privacy" className="hover:text-accent">Privacy Policy</Link></li>
             <li><Link to="/terms" className="hover:text-accent">Terms</Link></li>

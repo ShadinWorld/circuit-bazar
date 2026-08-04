@@ -61,17 +61,42 @@ async function adjustStock(items, direction) {
 }
 
 // Used by the "verified purchase" review check: does this phone number
-// have a delivered order that included this product? Queries by phone
-// only (no composite index needed) and filters the rest client-side,
-// matching the pattern already used in firebase/reviews.js.
+// have a delivered order that included this product?
+//
+// IMPORTANT: the orderStatus == "delivered" filter must be part of the
+// QUERY itself, not just checked client-side afterwards. Firestore
+// rejects a list query entirely (permission-denied) if it could
+// possibly return a document the rule wouldn't allow — the current
+// rule only lets a non-admin read orders where orderStatus ==
+// "delivered", so a query on phone alone (which could also match a
+// pending/confirmed order) gets denied outright, even if every actual
+// match happens to be delivered. Including the filter here is what
+// makes Firestore able to verify the query is safe to run.
 export async function hasDeliveredPurchase(phone, productId) {
-  const q = query(ordersRef, where("phone", "==", phone))
+  const q = query(
+    ordersRef,
+    where("phone", "==", phone),
+    where("orderStatus", "==", "delivered")
+  )
   const snapshot = await getDocs(q)
   return snapshot.docs.some((docSnap) => {
     const order = docSnap.data()
-    if (order.orderStatus !== "delivered") return false
     return (order.items || []).some((item) => item.productId === productId)
   })
+}
+
+// Used by the testimonial "verified customer" check: does this phone
+// number have ANY delivered order at all (not tied to one specific
+// product — used for overall shop testimonials, unlike
+// hasDeliveredPurchase above which checks a specific product).
+export async function hasAnyDeliveredOrder(phone) {
+  const q = query(
+    ordersRef,
+    where("phone", "==", phone),
+    where("orderStatus", "==", "delivered")
+  )
+  const snapshot = await getDocs(q)
+  return !snapshot.empty
 }
 
 // Rule: stock is deducted the moment an order first becomes "delivered",
