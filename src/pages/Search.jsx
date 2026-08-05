@@ -1,14 +1,18 @@
 import { useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Search as SearchIcon } from "lucide-react"
 import { motion } from "framer-motion"
 import { getAllProducts } from "../firebase/products"
 import ProductCard from "../components/product/ProductCard"
 import { ProductGridSkeleton } from "../components/ui/Skeleton"
+import { usePageTitle } from "../hooks/usePageTitle"
 
 function Search() {
+  usePageTitle("Search")
+  const [searchParams] = useSearchParams()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
-  const [query, setQuery] = useState("")
+  const [query, setQuery] = useState(searchParams.get("q") || "")
 
   useEffect(() => {
     getAllProducts()
@@ -16,6 +20,13 @@ function Search() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
+
+  // Keep the search box in sync if someone arrives via a link with
+  // ?q=... already filled in (e.g. the search box on the Home page)
+  useEffect(() => {
+    const q = searchParams.get("q")
+    if (q) setQuery(q)
+  }, [searchParams])
 
   const results = query.trim()
     ? products.filter((p) => {

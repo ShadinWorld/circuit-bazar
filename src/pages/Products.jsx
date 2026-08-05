@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
+import { Search as SearchIcon } from "lucide-react"
 import { motion } from "framer-motion"
 import { getAllProducts } from "../firebase/products"
 import { getAllReviews, buildRatingMap } from "../firebase/reviews"
@@ -17,6 +18,7 @@ function Products() {
   const activeCategory = searchParams.get("category") || ""
   const [sortBy, setSortBy] = useState("newest")
   const [inStockOnly, setInStockOnly] = useState(false)
+  const [searchText, setSearchText] = useState("")
 
   useEffect(() => {
     getAllProducts()
@@ -35,6 +37,16 @@ function Products() {
   let visibleProducts = activeCategory
     ? products.filter((p) => p.category === activeCategory)
     : products
+
+  if (searchText.trim()) {
+    const q = searchText.trim().toLowerCase()
+    visibleProducts = visibleProducts.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+    )
+  }
 
   if (inStockOnly) {
     visibleProducts = visibleProducts.filter((p) => p.stock > 0)
@@ -60,29 +72,41 @@ function Products() {
     <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16">
       <h1 className="text-2xl sm:text-3xl font-bold text-primary-text mb-6">Products</h1>
 
-      {categories.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-5">
-          <button
-            onClick={() => selectCategory("")}
-            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-              activeCategory === "" ? "bg-accent text-white border-accent" : "border-slate-200 text-slate-600 hover:border-accent"
-            }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+        {categories.length > 0 && (
+          <div className="flex flex-wrap gap-2">
             <button
-              key={cat}
-              onClick={() => selectCategory(cat)}
+              onClick={() => selectCategory("")}
               className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
-                activeCategory === cat ? "bg-accent text-white border-accent" : "border-slate-200 text-slate-600 hover:border-accent"
+                activeCategory === "" ? "bg-accent text-white border-accent" : "border-slate-200 text-slate-600 hover:border-accent"
               }`}
             >
-              {cat}
+              All
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => selectCategory(cat)}
+                className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${
+                  activeCategory === cat ? "bg-accent text-white border-accent" : "border-slate-200 text-slate-600 hover:border-accent"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="relative w-full sm:w-56 shrink-0">
+          <SearchIcon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="Search these products…"
+            className="w-full border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+          />
         </div>
-      )}
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div className="flex flex-wrap items-center gap-4">

@@ -99,6 +99,19 @@ export async function hasAnyDeliveredOrder(phone) {
   return !snapshot.empty
 }
 
+// How many delivered orders this phone number has — used to cap how
+// many overall shop testimonials they're allowed to leave (one per
+// delivered order, see firebase/testimonials.js).
+export async function getDeliveredOrderCount(phone) {
+  const q = query(
+    ordersRef,
+    where("phone", "==", phone),
+    where("orderStatus", "==", "delivered")
+  )
+  const snapshot = await getDocs(q)
+  return snapshot.size
+}
+
 // Rule: stock is deducted the moment an order first becomes "delivered",
 // and restored if it's ever moved OUT of "delivered".
 export async function updateOrderStatus(order, newStatus) {

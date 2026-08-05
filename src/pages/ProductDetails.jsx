@@ -172,7 +172,7 @@ function ProductDetails() {
           )}
           {!isLongDescription && <div className="mb-4" />}
 
-          <p className="text-xs text-slate-400 mb-6">
+          <p className={`text-xs font-semibold mb-6 ${product.stock > 0 ? "text-accent" : "text-red-500"}`}>
             {product.stock > 0 ? "In stock" : "Out of stock"}
           </p>
 

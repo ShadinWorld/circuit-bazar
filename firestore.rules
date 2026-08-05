@@ -103,10 +103,27 @@ service cloud.firestore {
         request.resource.data.rating <= 5 &&
         request.resource.data.comment is string &&
         request.resource.data.comment.size() < 1000 &&
+        request.resource.data.improvements is string &&
+        request.resource.data.improvements.size() < 1000 &&
         request.resource.data.imageUrl is string &&
         request.resource.data.imageUrl.size() < 500 &&
         !("phone" in request.resource.data);
       allow update, delete: if request.auth != null;
+    }
+
+    // Testimonial claims: tracks how many overall-shop reviews a phone
+    // number has already submitted, WITHOUT linking that phone to any
+    // public testimonial document (keeps the public collection above
+    // phone-free). Read is open because the customer's own browser
+    // needs to check their current count before submitting another
+    // review — this only exposes a small count number keyed to a
+    // phone-derived ID, not any personal/order details. Same
+    // increment-by-exactly-1 pattern as the invoice counter.
+    match /testimonialClaims/{claimId} {
+      allow read: if true;
+      allow create: if request.resource.data.count == 1;
+      allow update: if request.resource.data.count == resource.data.count + 1;
+      allow delete: if false;
     }
   }
 }

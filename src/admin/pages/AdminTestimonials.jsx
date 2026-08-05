@@ -54,7 +54,12 @@ function AdminTestimonials() {
               <p className="font-medium text-primary-text text-sm">{t.name}</p>
               <StarRating value={t.rating} size={14} />
             </div>
-            {t.comment && <p className="text-sm text-slate-600 mb-3">{t.comment}</p>}
+            {t.comment && <p className="text-sm text-slate-600 mb-2">{t.comment}</p>}
+            {t.improvements && (
+              <p className="text-xs text-amber-700 bg-amber-50 rounded-lg px-2 py-1.5 mb-3">
+                <span className="font-medium">Suggested improvement: </span>{t.improvements}
+              </p>
+            )}
             <button
               onClick={() => handleDelete(t.id)}
               disabled={deletingId === t.id}

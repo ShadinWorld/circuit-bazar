@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Truck } from "lucide-react"
+import { Truck, Search as SearchIcon, MessageSquarePlus } from "lucide-react"
 import { getAllProducts } from "../firebase/products"
 import { getAllReviews, buildRatingMap } from "../firebase/reviews"
 import { getAllTestimonials } from "../firebase/testimonials"
@@ -14,11 +14,14 @@ import { usePageTitle } from "../hooks/usePageTitle"
 
 function Home() {
   usePageTitle("Home")
+  const navigate = useNavigate()
   const [allProducts, setAllProducts] = useState([])
   const [products, setProducts] = useState([])
   const [ratingMap, setRatingMap] = useState({})
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
+  const [homeSearch, setHomeSearch] = useState("")
+  const [homeSort, setHomeSort] = useState("newest")
 
   useEffect(() => {
     getAllProducts()
@@ -38,6 +41,25 @@ function Home() {
       .catch(() => {})
   }, [])
 
+  const visibleProducts = [...products].sort((a, b) => {
+    if (homeSort === "price-low") return a.sellPrice - b.sellPrice
+    if (homeSort === "price-high") return b.sellPrice - a.sellPrice
+    if (homeSort === "best-selling") return (b.soldCount || 0) - (a.soldCount || 0)
+    if (homeSort === "top-rated") {
+      const avgA = ratingMap[a.id]?.average || 0
+      const avgB = ratingMap[b.id]?.average || 0
+      return avgB - avgA
+    }
+    return 0
+  })
+
+  function handleSearchSubmit(e) {
+    e.preventDefault()
+    if (homeSearch.trim()) {
+      navigate(`/search?q=${encodeURIComponent(homeSearch.trim())}`)
+    }
+  }
+
   return (
     <>
       <HeroCarousel />
@@ -50,11 +72,35 @@ function Home() {
       </div>
 
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20 pt-10">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-primary-text">Latest Arrivals</h2>
           <Link to="/products" className="text-sm text-accent font-medium hover:underline">
             View all →
           </Link>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 mb-6">
+          <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-64">
+            <SearchIcon size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              value={homeSearch}
+              onChange={(e) => setHomeSearch(e.target.value)}
+              placeholder="Search products…"
+              className="w-full border border-slate-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30"
+            />
+          </form>
+
+          <select
+            value={homeSort}
+            onChange={(e) => setHomeSort(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+          >
+            <option value="newest">Newest</option>
+            <option value="best-selling">Best Selling</option>
+            <option value="top-rated">Highest Rated</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+          </select>
         </div>
 
         {loading && <ProductGridSkeleton count={8} />}
@@ -69,7 +115,7 @@ function Home() {
           animate="show"
           variants={{ show: { transition: { staggerChildren: 0.05 } } }}
         >
-          {!loading && products.map((product) => (
+          {!loading && visibleProducts.map((product) => (
             <motion.div
               key={product.id}
               variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
@@ -84,11 +130,19 @@ function Home() {
 
       {testimonials.length > 0 && (
         <section className="max-w-6xl mx-auto px-4 sm:px-6 pb-20">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <h2 className="text-xl sm:text-2xl font-bold text-primary-text">What Customers Say</h2>
-            <Link to="/testimonials" className="text-sm text-accent font-medium hover:underline">
-              View all →
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                to="/testimonials"
+                className="flex items-center gap-1.5 text-sm bg-accent text-white font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700"
+              >
+                <MessageSquarePlus size={15} /> Leave a Review
+              </Link>
+              <Link to="/testimonials" className="text-sm text-accent font-medium hover:underline">
+                View all →
+              </Link>
+            </div>
           </div>
           <div className="grid sm:grid-cols-3 gap-5">
             {testimonials.map((t) => (

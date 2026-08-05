@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { getAllTestimonials, addTestimonial } from "../firebase/testimonials"
-import { hasAnyDeliveredOrder } from "../firebase/orders"
+import { getAllTestimonials, addTestimonial, claimTestimonialSlot } from "../firebase/testimonials"
+import { getDeliveredOrderCount } from "../firebase/orders"
 import StarRating from "../components/product/StarRating"
 import Button from "../components/ui/Button"
 import { usePageTitle } from "../hooks/usePageTitle"
@@ -10,8 +10,8 @@ function Testimonials() {
   usePageTitle("Customer Reviews")
   const [testimonials, setTestimonials] = useState([])
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ name: "", phone: "", rating: 0, comment: "", imageUrl: "" })
-  const [status, setStatus] = useState("idle") // idle | checking | submitting | success | not-eligible | error
+  const [form, setForm] = useState({ name: "", phone: "", rating: 0, comment: "", improvements: "", imageUrl: "" })
+  const [status, setStatus] = useState("idle") // idle | checking | submitting | success | not-eligible | limit-reached | error
   const [errorMsg, setErrorMsg] = useState("")
 
   function load() {
@@ -33,21 +33,34 @@ function Testimonials() {
     setErrorMsg("")
 
     try {
-      const eligible = await hasAnyDeliveredOrder(form.phone.trim())
-      if (!eligible) {
+      const phone = form.phone.trim()
+      const deliveredCount = await getDeliveredOrderCount(phone)
+
+      if (deliveredCount === 0) {
         setStatus("not-eligible")
         return
       }
 
+      // Reserves one review "slot" — throws if they've already used up
+      // a slot for every delivered order they have.
       setStatus("submitting")
+      try {
+        await claimTestimonialSlot(phone, deliveredCount)
+      } catch (claimError) {
+        setStatus("limit-reached")
+        setErrorMsg(claimError.message)
+        return
+      }
+
       await addTestimonial({
         name: form.name.trim(),
         rating: form.rating,
         comment: form.comment.trim(),
+        improvements: form.improvements.trim(),
         imageUrl: form.imageUrl.trim(),
       })
       setStatus("success")
-      setForm({ name: "", phone: "", rating: 0, comment: "", imageUrl: "" })
+      setForm({ name: "", phone: "", rating: 0, comment: "", improvements: "", imageUrl: "" })
       load()
     } catch (err) {
       setStatus("error")
@@ -96,8 +109,9 @@ function Testimonials() {
       <div className="bg-slate-50 rounded-xl p-6 max-w-lg mx-auto">
         <h2 className="font-semibold text-primary-text mb-1">Share Your Experience</h2>
         <p className="text-xs text-slate-500 mb-4">
-          Only customers who've received a delivered order can leave a review here.
-          Your phone number is only used to verify this and is never shown publicly.
+          Only customers who've received a delivered order can leave a review here —
+          one review per delivered order. Your phone number is only used to verify
+          this and is never shown publicly.
         </p>
 
         {status === "success" ? (
@@ -134,6 +148,14 @@ function Testimonials() {
               rows={3}
               className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
             />
+            <textarea
+              name="improvements"
+              value={form.improvements}
+              onChange={handleChange}
+              placeholder="Anything we could improve? (optional, shared with the team privately — not shown publicly)"
+              rows={2}
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white"
+            />
             <input
               name="imageUrl"
               value={form.imageUrl}
@@ -147,6 +169,9 @@ function Testimonials() {
                 We couldn't find a delivered order under that phone number. Reviews are
                 only open to customers who've received an order from us.
               </p>
+            )}
+            {status === "limit-reached" && (
+              <p className="text-xs text-red-600">{errorMsg}</p>
             )}
             {status === "error" && <p className="text-xs text-red-600">{errorMsg}</p>}
 
